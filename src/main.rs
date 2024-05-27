@@ -1,16 +1,18 @@
-use actix_web::{web, App, HttpServer, HttpResponse, Responder, middleware::Logger};
-use serde::{Deserialize, Serialize};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder};
 use std::sync::{Arc, Mutex};
-use mongodb::{Client, Collection, bson::{doc, Document, from_document}};
-use futures::StreamExt;
+use mongodb::{Client, Collection};
+use futures::stream::TryStreamExt;
+use serde_json::json;
+use mongodb::{bson::doc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use actix_files as fs;
-
-
 
 #[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug)]
+
 struct Book {
-    #[serde(rename = "_id")]
+    #[serde(rename= "_id")]
+    #[serde(default)]
     id: String,
     title: String,
     author: String,
@@ -51,8 +53,10 @@ async fn create_book(
         return HttpResponse::BadRequest().body("Invalid input data");
     }
 
+    let new_book_id = Uuid::new_v4().to_string(); // Generate UUID for the id field
+
     let new_book = Book {
-        id: Uuid::new_v4().to_string(),
+        id: new_book_id,
         title: book.title.clone(),
         author: book.author.clone(),
         published_year: book.published_year,
@@ -70,63 +74,62 @@ async fn create_book(
     }
 }
 
-use serde_json::json;
-
-#[derive(Serialize)]
-struct BooksResponse {
-    books: Vec<BookResponse>,
-}
-
-use log::error;
 
 
-// Function to get all books from the database
-async fn get_all_books(db_pool: web::Data<Collection<Book>>) -> impl Responder {
-    let cursor = match db_pool.find(None, None).await {
-        Ok(cursor) => cursor,
-        Err(err) => {
-            error!("Failed to query books: {:?}", err);
-            return HttpResponse::InternalServerError().json("Failed to query books");
-        }
+async fn get_all_books(db_pool: web::Data<Arc<Mutex<Collection<Book>>>>) -> impl Responder {
+    let collection = match db_pool.lock() {
+      Ok(collection) => collection,
+      Err(err) => {
+        eprintln!("Failed to lock the database collection: {:?}", err);
+        return HttpResponse::InternalServerError().body(format!("Failed to lock the database collection: {}", err));
+      }
     };
+  
+    let cursor = match collection.find(None, None).await {
+      Ok(cursor) => cursor,
+      Err(err) => {
+        eprintln!("Failed to query books: {:?}", err);
+        return HttpResponse::InternalServerError().body(format!("Failed to query books: {}", err));
+      }
+    };
+  
+    let books: Vec<Book> = match cursor.try_collect().await {
+      Ok(books) => books,
+      Err(err) => {
+        eprintln!("Failed to collect books: {:?}", err);
+        return HttpResponse::InternalServerError().body(format!("Failed to collect books: {}", err));
+      }
+    };
+  
+     //Print the first book for inspection (optional)
+     println!("{:?}", books[0]);
+  
+    HttpResponse::Ok().json(books)
+  }
+  
 
-    let mut books = Vec::new();
-    let mut stream = cursor;
+async fn get_book_by_id(
+    db_pool: web::Data<Arc<Mutex<Collection<Book>>>>,
+    path: web::Path<Uuid>,
+) -> impl Responder {
+    let collection = db_pool.lock().unwrap();
+    let id = path.into_inner();
 
-    while let Some(result) = stream.next().await {
-        match result {
-            Ok(doc) => {
-                match mongodb::bson::from_document(doc) {
-                    Ok(book) => book.PUSH(BookResponse::from(book)),
-                    Err(err) => {
-                        error!("Failed to deserialize book: {:?}", err);
-                        return HttpResponse::InternalServerError().json("Failed to deserialize book");
-                    }
-                };
-            }
-            Err(err) => {
-                error!("Failed to retrieve book document: {:?}", err);
-                return HttpResponse::InternalServerError().json("Failed to retrieve book document");
-            }
+    match collection.find_one(doc! { "id": id.to_string() }, None).await {
+        Ok(Some(book)) => HttpResponse::Ok().json(BookResponse::from(book)),
+        Ok(None) => HttpResponse::NotFound().body("Book not found"),
+        Err(err) => {
+            eprintln!("Failed to get book by ID: {:?}", err);
+            HttpResponse::InternalServerError().body(format!("Failed to get book by ID: {}", err))
         }
     }
-
-    let response_json = json!({ "books": books });
-
-    HttpResponse::Ok().json(response_json)
 }
-
-
 
 async fn update_book(
     db_pool: web::Data<Arc<Mutex<Collection<Book>>>>,
     path: web::Path<Uuid>,
     updated_book: web::Json<NewBook>,
 ) -> impl Responder {
-    if updated_book.title.is_empty() || updated_book.author.is_empty() || updated_book.published_year <= 0 {
-        return HttpResponse::BadRequest().body("Invalid input data");
-    }
-
     let collection = db_pool.lock().unwrap();
     let id = path.into_inner();
 
@@ -138,7 +141,7 @@ async fn update_book(
         }
     };
 
-    match collection.update_one(doc! { "_id": id.to_string() }, update_doc, None).await {
+    match collection.update_one(doc! { "id": id.to_string() }, update_doc, None).await {
         Ok(_) => HttpResponse::Ok().json(json!({ "message": "Book updated successfully" })),
         Err(err) => {
             eprintln!("Failed to update book: {:?}", err);
@@ -154,7 +157,7 @@ async fn delete_book(
     let collection = db_pool.lock().unwrap();
     let id = path.into_inner();
 
-    match collection.delete_one(doc! { "_id": id.to_string() }, None).await {
+    match collection.delete_one(doc! { "id": id.to_string() }, None).await {
         Ok(_) => HttpResponse::Ok().json(json!({ "message": "Book deleted successfully" })),
         Err(err) => {
             eprintln!("Failed to delete book: {:?}", err);
@@ -166,23 +169,20 @@ async fn delete_book(
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let mongo_address = "mongodb+srv://aliadel:LnLthlufzQll6DTD@bookstore.n2xxh9r.mongodb.net/?retryWrites=true&w=majority&appName=BookStore";
-    let client = Client::with_uri_str(mongo_address).await.expect("Failed to connect to MongoDB");
+    let client = Client::with_uri_str(mongo_address).await.unwrap();
     let db = client.database("book_db");
     let collection = db.collection::<Book>("books");
 
-    let collection_names = db.list_collection_names(None).await.expect("Failed to list collection names");
-    if !collection_names.contains(&"books".to_string()) {
-        db.create_collection("books", None).await.expect("Failed to create collection");
-    }
-
     let data = web::Data::new(Arc::new(Mutex::new(collection)));
+
     HttpServer::new(move || {
         App::new()
-            .wrap(Logger::default())
             .app_data(data.clone())
-            .service(fs::Files::new("/", "static").index_file("index.html")) // Serve static files
             .route("/books", web::post().to(create_book))
             .route("/books", web::get().to(get_all_books))
+            .route("/books/{id}", web::get().to(get_book_by_id))
+            .route("/books/{id}", web::put().to(update_book))
+            .route("/books/{id}", web::delete().to(delete_book))
     })
     .bind("127.0.0.1:8080")?
     .run()
