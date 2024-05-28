@@ -85,15 +85,15 @@
         }
 
         .book {
-    position: relative;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    background-color: #c8e6c9; /* Light green */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
+            position: relative;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background-color: #006400; /* Dark green */
+            color: #fff; /* Text color */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
 
         .book:hover {
             transform: translateY(-5px);
@@ -119,7 +119,7 @@
         .delete-btn {
             position: absolute;
             top: 10px;
-            right: 10px;
+            right: 40px;
             background-color: #ff6347; /* Tomato red */
             color: white;
             border: none;
@@ -131,6 +131,24 @@
 
         .delete-btn:hover {
             background-color: #ff3b30; /* Darker shade of red */
+        }
+
+        /* Update button styles */
+        .update-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #1e90ff; /* Dodger blue */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .update-btn:hover {
+            background-color: #4169e1; /* Darker shade of blue */
         }
 
         /* Navigation styles */
@@ -195,12 +213,12 @@
             function createCard(id, title, author, publishedYear) {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'book';
-                cardDiv.dataset.id = id; // Set data-id attribute with the book ID
                 cardDiv.innerHTML = `
                     <h2>${title}</h2>
                     <p>Author: ${author}</p>
                     <p>Published Year: ${publishedYear}</p>
                     <button class="delete-btn" data-id="${id}">&times;</button>
+                    <button class="update-btn" data-id="${id}"><i class="fas fa-edit"></i></button>
                 `;
                 return cardDiv;
             }
@@ -226,8 +244,8 @@
             // Display existing cards from local storage
             displayCardsFromLocalStorage();
 
-                        // Add event listener to form submission
-                        document.getElementById('bookForm').addEventListener('submit', event => {
+            // Add event listener to form submission
+            document.getElementById('bookForm').addEventListener('submit', event => {
                 event.preventDefault(); // Prevent default form submission
 
                 // Get form data
@@ -256,14 +274,29 @@
                 event.target.reset();
             });
 
-            // Add event listener to delete buttons
-            document.getElementById('bookList').addEventListener('click', event => {
+           // Add event listener to delete buttons
+           document.getElementById('bookList').addEventListener('click', event => {
                 if (event.target.classList.contains('delete-btn')) {
                     const id = event.target.dataset.id;
                     // Remove the card from the UI
                     event.target.parentElement.remove();
                     // Remove the card from local storage
                     removeCardFromLocalStorage(id);
+                } else if (event.target.classList.contains('update-btn')) {
+                    const id = event.target.dataset.id;
+                    // Prompt the user for new data
+                    const newTitle = prompt('Enter new title:');
+                    const newAuthor = prompt('Enter new author:');
+                    const newPublishedYear = prompt('Enter new published year:');
+
+                    // Update the card with the new data
+                    const card = event.target.parentElement;
+                    card.querySelector('h2').textContent = newTitle;
+                    card.querySelector('p:nth-child(2)').textContent = 'Author: ' + newAuthor;
+                    card.querySelector('p:nth-child(3)').textContent = 'Published Year: ' + newPublishedYear;
+
+                    // Update the data in local storage
+                    updateCardInLocalStorage(id, newTitle, newAuthor, newPublishedYear);
                 }
             });
 
@@ -272,6 +305,18 @@
                 let storedData = JSON.parse(localStorage.getItem('bookData')) || [];
                 storedData = storedData.filter(item => item.id !== id);
                 localStorage.setItem('bookData', JSON.stringify(storedData));
+            }
+
+            // Function to update card data in local storage
+            function updateCardInLocalStorage(id, newTitle, newAuthor, newPublishedYear) {
+                let storedData = JSON.parse(localStorage.getItem('bookData')) || [];
+                const index = storedData.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    storedData[index].title = newTitle;
+                    storedData[index].author = newAuthor;
+                    storedData[index].published_year = newPublishedYear;
+                    localStorage.setItem('bookData', JSON.stringify(storedData));
+                }
             }
         });
     </script>
