@@ -66,7 +66,7 @@
 
         input[type="submit"] {
             padding: 10px 20px;
-            background-color: #4caf50;
+            background-color: #000000;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -174,7 +174,7 @@
         }
 
         .active {
-            background-color: #4CAF50;
+            background-color: #555;
         }
 
         .nav-icon {
@@ -185,9 +185,10 @@
 <body>
     <div class="nav-bar">
         <nav>
-            <a class="active" href="#home"><i class="fas fa-home nav-icon"></i> Home</a>
-            <a href="#about"><i class="fas fa-info-circle nav-icon"></i> About Us</a>
-            <a href="#contact"><i class="fas fa-envelope nav-icon"></i> Contact</a>
+            <a href="index.html"><i class="fas fa-home nav-icon"></i> Home</a>
+            <a href="about.html"><i class="fas fa-info-circle nav-icon"></i> About Us</a>
+            <a href="contact.html"><i class="fas fa-envelope nav-icon"></i> Contact</a>
+            <a class="active" href="books.html"><i class="fas fa-book nav-icon"></i> Book List</a>
         </nav>
     </div>
 
@@ -202,122 +203,28 @@
             <input type="text" id="published_year" name="published_year" required>
             <input type="submit" value="Add Book">
         </form>
-        <div class="books" id="bookList">
-            <!-- Book items will be added here dynamically -->
-        </div>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Function to create a card element with the provided data
-            function createCard(id, title, author, publishedYear) {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'book';
-                cardDiv.innerHTML = `
-                    <h2>${title}</h2>
-                    <p>Author: ${author}</p>
-                    <p>Published Year: ${publishedYear}</p>
-                    <button class="delete-btn" data-id="${id}">&times;</button>
-                    <button class="update-btn" data-id="${id}"><i class="fas fa-edit"></i></button>
-                `;
-                return cardDiv;
-            }
-
-            // Function to save data to local storage
-            function saveToLocalStorage(data) {
-                const storedData = JSON.parse(localStorage.getItem('bookData')) || [];
-                storedData.push(data);
-                localStorage.setItem('bookData', JSON.stringify(storedData));
-            }
-
-            // Function to display cards from local storage
-            function displayCardsFromLocalStorage() {
-                const storedData = JSON.parse(localStorage.getItem('bookData')) || [];
-                const bookList = document.getElementById('bookList');
-                bookList.innerHTML = ''; // Clear previous list
-                storedData.forEach(data => {
-                    const card = createCard(data.id, data.title, data.author, data.published_year);
-                    bookList.appendChild(card);
-                });
-            }
-
-            // Display existing cards from local storage
-            displayCardsFromLocalStorage();
-
             // Add event listener to form submission
             document.getElementById('bookForm').addEventListener('submit', event => {
                 event.preventDefault(); // Prevent default form submission
 
                 // Get form data
                 const formData = new FormData(event.target);
-
-                // Convert form data to JSON
-                const jsonData = {};
-                formData.forEach((value, key) => {
-                    jsonData[key] = value;
-                });
-
-                // Generate a unique ID for the book
-                const id = Date.now().toString();
-
-                // Add the ID to the JSON data
-                jsonData.id = id;
+                const jsonData = Object.fromEntries(formData.entries());
 
                 // Save data to local storage
-                saveToLocalStorage(jsonData);
+                let books = JSON.parse(localStorage.getItem('books')) || [];
+                jsonData.id = new Date().getTime(); // Generate a unique ID based on timestamp
+                books.push(jsonData);
+                localStorage.setItem('books', JSON.stringify(books));
 
-                // Display the new card
-                const card = createCard(id, jsonData.title, jsonData.author, jsonData.published_year);
-                document.getElementById('bookList').appendChild(card);
+                // Redirect to the books display page
 
-                // Reset form
-                event.target.reset();
+                window.location.href = 'books.html';
             });
-
-           // Add event listener to delete buttons
-           document.getElementById('bookList').addEventListener('click', event => {
-                if (event.target.classList.contains('delete-btn')) {
-                    const id = event.target.dataset.id;
-                    // Remove the card from the UI
-                    event.target.parentElement.remove();
-                    // Remove the card from local storage
-                    removeCardFromLocalStorage(id);
-                } else if (event.target.classList.contains('update-btn')) {
-                    const id = event.target.dataset.id;
-                    // Prompt the user for new data
-                    const newTitle = prompt('Enter new title:');
-                    const newAuthor = prompt('Enter new author:');
-                    const newPublishedYear = prompt('Enter new published year:');
-
-                    // Update the card with the new data
-                    const card = event.target.parentElement;
-                    card.querySelector('h2').textContent = newTitle;
-                    card.querySelector('p:nth-child(2)').textContent = 'Author: ' + newAuthor;
-                    card.querySelector('p:nth-child(3)').textContent = 'Published Year: ' + newPublishedYear;
-
-                    // Update the data in local storage
-                    updateCardInLocalStorage(id, newTitle, newAuthor, newPublishedYear);
-                }
-            });
-
-            // Function to remove card from local storage
-            function removeCardFromLocalStorage(id) {
-                let storedData = JSON.parse(localStorage.getItem('bookData')) || [];
-                storedData = storedData.filter(item => item.id !== id);
-                localStorage.setItem('bookData', JSON.stringify(storedData));
-            }
-
-            // Function to update card data in local storage
-            function updateCardInLocalStorage(id, newTitle, newAuthor, newPublishedYear) {
-                let storedData = JSON.parse(localStorage.getItem('bookData')) || [];
-                const index = storedData.findIndex(item => item.id === id);
-                if (index !== -1) {
-                    storedData[index].title = newTitle;
-                    storedData[index].author = newAuthor;
-                    storedData[index].published_year = newPublishedYear;
-                    localStorage.setItem('bookData', JSON.stringify(storedData));
-                }
-            }
         });
     </script>
 </body>
