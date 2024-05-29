@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Book List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-bar {
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+        }
+
+        nav a {
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #555;
+        }
+
+        .active {
+            background-color: #4CAF50;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .books {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .book {
+            position: relative;
+            width: 300px;
+            padding: 20px;
+            border-radius: 15px;
+            background: #555;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .book:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .book h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .book p {
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .book p:last-child {
+            margin-bottom: 0;
+        }
+
+        .delete-btn,
+        .update-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white; /* Tomato red */
+            color: black;
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px; /* Set width and height for perfect circle */
+            height: 30px;
+            font-size: 18px; /* Adjust font size */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+        }
+
+        .update-btn {
+            right: 50px;
+            background-color: white; /* Dodger blue */
+        }
+
+        .delete-btn:hover {
+            background-color: #ff3b30; /* Darker shade of red */
+        }
+
+        .update-btn:hover {
+            background-color: #4169e1; /* Darker shade of blue */
+        }
+
+        .delete-all-btn {
+            background-color: #532219;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .delete-all-btn:hover {
+            background-color: #ff3b30; /* Darker shade of red */
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <nav>
+            <a href="index.html"><i class="fas fa-home nav-icon"></i> Home</a>
+            <a href="about.html"><i class="fas fa-info-circle nav-icon"></i> About Us</a>
+            <a href="contact.html"><i class="fas fa-envelope nav-icon"></i> Contact</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h1>Book List</h1>
+        <div class="books" id="bookList">
+            <!-- Book items will be added here dynamically -->
+        </div>
+        <button class="delete-all-btn" id="deleteAllBooks">Delete All Books</button>
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Update Book</h2>
+            <form id="updateForm">
+                <label for="updateTitle">Title:</label>
+                <input type="text" id="updateTitle" name="title" required>
+                <label for="updateAuthor">Author:</label>
+                <input type="text" id="updateAuthor" name="author" required>
+                <label for="updateYear">Published Year:</label>
+                <input type="text" id="updateYear" name="published_year" required>
+                <input type="submit" value="Update Book">
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function displayBooks() {
+                const books = JSON.parse(localStorage.getItem('books')) || [];
+                const bookList = document.getElementById('bookList');
+                bookList.innerHTML = ''; // Clear previous list
+    
+                books.forEach(book => {
+                    const card = createCard(book.id, book.title, book.author, book.published_year);
+                    bookList.appendChild(card);
+                });
+            }
+    
+            function createCard(id, title, author, publishedYear) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'book';
+                cardDiv.innerHTML = `
+                    <h2>${title}</h2>
+                    <p>Author: ${author}</p>
+                    <p>Published Year: ${publishedYear}</p>
+                    <button class="delete-btn" data-id="${id}">&times;</button>
+                    <button class="update-btn" data-id="${id}"><i class="fas fa-edit"></i></button>
+                `;
+                return cardDiv;
+            }
+    
+            document.getElementById('bookList').addEventListener('click', event => {
+                const id = event.target.dataset.id;
+    
+                if (event.target.classList.contains('delete-btn')) {
+                    let books = JSON.parse(localStorage.getItem('books')) || [];
+                    books = books.filter(book => book.id !== parseInt(id, 10));
+                    localStorage.setItem('books', JSON.stringify(books));
+                    displayBooks();
+                } else if (event.target.classList.contains('update-btn')) {
+                    const book = JSON.parse(localStorage.getItem('books')).find(book => book.id === parseInt(id, 10));
+                    document.getElementById('updateTitle').value = book.title;
+                    document.getElementById('updateAuthor').value = book.author;
+                    document.getElementById('updateYear').value = book.published_year;
+                    document.getElementById('updateForm').dataset.id = id;
+                    document.getElementById('myModal').style.display = "block";
+                }
+            });
+    
+            document.getElementById('updateForm').addEventListener('submit', event => {
+                event.preventDefault();
+                const id = event.target.dataset.id;
+                const updatedBook = {
+                    id: parseInt(id, 10),
+                    title: document.getElementById('updateTitle').value,
+                    author: document.getElementById('updateAuthor').value,
+                    published_year: document.getElementById('updateYear').value,
+                };
+    
+                let books = JSON.parse(localStorage.getItem('books')) || [];
+                books = books.map(book => book.id === parseInt(id, 10) ? updatedBook : book);
+                localStorage.setItem('books', JSON.stringify(books));
+                displayBooks();
+                document.getElementById('myModal').style.display = "none";
+            });
+    
+            document.getElementById('deleteAllBooks').addEventListener('click', () => {
+                localStorage.removeItem('books');
+                displayBooks();
+            });
+    
+            displayBooks();
+    
+            const modal = document.getElementById('myModal');
+            const span = document.getElementsByClassName('close')[0];
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        });
+    </script>    
+</body>
+</html>
