@@ -12,5 +12,6 @@ serde = { version = "1.0.202", features = ["derive"] }
 reqwest = "0.12.4"
 rand = "0.8.5"
 actix-files = "0.6"
+actix-cors = "0.7.0"
 
 
