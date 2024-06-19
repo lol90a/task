@@ -4,14 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-actix-web = "4.0"
-mongodb = "2.0"
-futures = "0.3"
-serde_json = "1.0"
-serde = { version = "1.0.202", features = ["derive"] }
-reqwest = "0.12.4"
-rand = "0.8.5"
-actix-files = "0.6"
-actix-cors = "0.7.0"
 
+yew = { version = "0.20", features = ["csr"] }
+yew-router = "0.18.0"
+yewtil = "0.4.0"
+wasm-bindgen = "0.2.92"
+web-sys = "0.3.69"
+actix-web = "4.7.0"
+actix-files = "0.6.6"
+actix-cors = "0.7.0"
+mongodb = "2.8.2"
+futures = "0.3.30"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.117"
+serde_derive = "1.0"
+wasm-bindgen-futures = "0.4.42"
 
