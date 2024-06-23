@@ -1,54 +1,35 @@
-// Import necessary crates and modules
-use actix_files::Files; // For serving static files
-use actix_web::{web, App, HttpServer}; // For web server functionalities
-use mongodb::{Client, Collection}; // For MongoDB client and collection handling
-use std::sync::{Arc, Mutex}; // For thread-safe shared state
-use actix_cors::Cors;
-use actix_web::http::header;
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
-mod handlers;
-mod models;
+struct Task {
+   // id: u32,
+    description: String,
+}
 
-use handlers::*;
-use models::book::Book;
+fn main() {
+    // Create a list of tasks
+    let tasks: Vec<Task> = (0..10)
+        .map(|i| Task {
+            // id: i,
+            description: format!("Task number {}", i),
+        })
+        .collect();
 
-// Main function to set up and run the Actix web server
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    // MongoDB connection string
-    let mongo_address = "mongodb+srv://aliadel:LnLthlufzQll6DTD@bookstore.n2xxh9r.mongodb.net/?retryWrites=true&w=majority&appName=BookStore";
-    
-    // Create a MongoDB client
-    let client = Client::with_uri_str(mongo_address).await.unwrap();
-    
-    // Access the database and collection
-    let db = client.database("book_db");
-    let collection = db.collection::<Book>("books");
+    // Shared counter for completed tasks
+    let completed_tasks = Arc::new(Mutex::new(0));
 
-    // Wrap the collection in an Arc and Mutex for thread-safe shared state
-    let data = web::Data::new(Arc::new(Mutex::new(collection)));
+    tasks.par_iter().for_each(|task| {
+        // Simulate task processing
+        println!("Processing {}", task.description);
+        thread::sleep(Duration::from_millis(500));
 
-    // Configure and start the HTTP server
-    HttpServer::new(move || {
-        App::new()
-            .wrap(
-                Cors::default()
-                    .allowed_origin("http://127.0.0.1:8080")
-                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-                    .allowed_headers(vec![header::CONTENT_TYPE])
-                    .max_age(3600),
-            )
-            .app_data(data.clone()) // Share the MongoDB collection across handlers
-            .route("/books", web::get().to(index::index)) // Route for the index
-            .route("/books/create", web::post().to(create_book::create_book)) // Route for creating a book
-            .route("/books/getall", web::get().to(get_all_books::get_all_books)) // Route for getting all books
-            .route("/books/get/{id}", web::get().to(get_book_by_id::get_book_by_id)) // Route for getting a book by ID
-            .route("/books/update/{id}", web::put().to(update_book::update_book)) // Route for updating a book
-            .route("/books/deleteall", web::get().to(delete_all_books::delete_all_books)) // Route for deleting all books
-            .route("/books/delete/{id}", web::delete().to(delete_book::delete_book)) // Route for deleting a book by ID
-            .service(Files::new("/", "src/HTML").index_file("index.html")) // Serve static files from the "src/HTML" directory
-    })
-    .bind("127.0.0.1:8080")? // Bind to the specified address and port
-    .run() // Run the server
-    .await // Await the server to finish
+        // Increment the counter for completed tasks
+        let mut completed = completed_tasks.lock().unwrap();
+        *completed += 1;
+        println!("Completed {} tasks", *completed);
+    });
+
+    println!("All tasks completed!");
 }
