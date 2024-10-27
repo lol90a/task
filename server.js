@@ -2,7 +2,7 @@
 
 const express = require("express");
 const app = express();
-const Web3 = require("web3");  // CommonJS style
+const Web3 = require("web3");  
 
 const connectDatabase = require("./config/database");
 const cloudinary = require("cloudinary");
