@@ -1,5 +1,0 @@
-curl -v -k -X POST 127.0.0.1:8080/books/create -H "Content-Type: application/json" -d '{"title": "The Rust Programming Language", "author": "Steve Klabnik and Carol Nichols", "published_year": 2018}'
-
-curl -v -k -X PUT 127.0.0.1:8080/books/update/66550f6a4706c2c67247da56 -H "Content-Type: application/json" -d '{"title": "HS BOOK", "author": "HS", "published_year": 2024}'
-
-clear && curl -v -k -X DELETE 127.0.0.1:8080/books/delete/66550f6a4706c2c67247da56
