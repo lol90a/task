@@ -5,7 +5,7 @@ const userRoute = require("./userRoute");
 const orderRoute = require("./orderRoute");
 const paymentRoute = require("./paymentRoute");
 const productRoute = require("./productRoute");
-const ethRoute = require("./ethRoute"); // Import your new ETH route
+const ethRoute = require("./ethRoute"); // Import  ETH route
 
 
 router.route("/user", userRoute);
